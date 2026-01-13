@@ -14,7 +14,7 @@ app.get('/health', (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow all origins for now (Frontend will connect here)
+    origin: "*", 
     methods: ["GET", "POST"]
   }
 });
@@ -24,17 +24,21 @@ io.on("connection", (socket) => {
 
   // 1. Join a specific appointment room
   socket.on("join-room", (roomId, userId) => {
-    console.log(`User ${userId} joined room ${roomId}`);
+    console.log(`User ${userId} joined room ${roomId} with Socket ID: ${socket.id}`);
     socket.join(roomId);
     
-    // Notify others in the room that a new user appeared
-    socket.to(roomId).emit("user-connected", userId);
+    // --- FIX IS HERE ---
+    // We MUST send socket.id so the other client knows who to signal.
+    // Ideally, send both: { userId, socketId: socket.id }
+    // But for your current client code to work without changes, send socket.id
+    socket.to(roomId).emit("user-connected", socket.id); 
   });
 
   // 2. Handle WebRTC Signaling (The "Handshake")
   
   // When User A sends an "Offer" (Calling...), send it to User B
   socket.on("offer", (payload) => {
+    // payload.target MUST be a socket.id for this to work
     io.to(payload.target).emit("offer", payload);
   });
 
