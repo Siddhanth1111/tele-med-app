@@ -51,14 +51,3 @@ The application follows a **Microservices** pattern:
 
 ---
 
-## ⚙️ Installation & Local Setup
-
-### Prerequisites
-* Docker & Docker Compose installed.
-* Node.js (for local development only).
-* Git.
-
-### 1. Clone the Repository
-```bash
-git clone [https://github.com/your-username/tele-med-app.git](https://github.com/your-username/tele-med-app.git)
-cd tele-med-app
