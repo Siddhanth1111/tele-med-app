@@ -1,0 +1,2 @@
+# We use the default DB 'healthcare_platform' created by Docker
+DATABASE_URL="postgresql://admin:password123@localhost:5432/healthcare_platform"

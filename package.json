@@ -1,0 +1,14 @@
+{
+  "name": "healthcare-platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=apps/client\" \"npm run dev --workspace=apps/api-gateway\"" 
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0" 
+  }
+}

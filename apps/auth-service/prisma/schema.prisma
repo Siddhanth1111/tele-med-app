@@ -1,0 +1,52 @@
+// apps/auth-service/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Enum for Roles (Strict typing)
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+// 2. Base User (Authentication)
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(PATIENT) // Defaults to Patient
+  createdAt DateTime @default(now())
+
+  // Relationships (One-to-One)
+  doctorProfile  DoctorProfile?
+  patientProfile PatientProfile?
+}
+
+// 3. Doctor Specific Data
+model DoctorProfile {
+  id             Int     @id @default(autoincrement())
+  userId         Int     @unique // Foreign Key
+  user           User    @relation(fields: [userId], references: [id])
+  specialization String  // e.g., "Cardiologist"
+  licenseNumber  String
+  consultationFee Float
+  bio            String?
+}
+
+// 4. Patient Specific Data
+model PatientProfile {
+  id             Int     @id @default(autoincrement())
+  userId         Int     @unique // Foreign Key
+  user           User    @relation(fields: [userId], references: [id])
+  insuranceProvider String?
+  allergies         String?
+}

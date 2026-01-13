@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+  # -----------------------------------------------------------------
+  # INFRASTRUCTURE (Databases & Messaging)
+  # -----------------------------------------------------------------
+
+  # 1. The Main Database (Postgres + Vector Support for AI)
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: healthcare-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: healthcare_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - healthcare-network
+
+  # 2. Message Queue (RabbitMQ) - Services talk to each other here
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      # We force these credentials
+      RABBITMQ_DEFAULT_USER: "admin"
+      RABBITMQ_DEFAULT_PASS: "password123"
+    networks:
+      - healthcare-network
+
+  # 3. Redis (For Caching & AI Rate Limiting)
+  redis:
+    image: redis:alpine
+    container_name: healthcare-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - healthcare-network
+
+  # -----------------------------------------------------------------
+  # APPLICATION SERVICES (Your Code)
+  # -----------------------------------------------------------------
+  
+  # Note: These use 'build: .' contexts. They will only work 
+  # AFTER we create the Dockerfiles in the next step.
+  
+  # 4. API Gateway (The Entry Point)
+  api-gateway:
+    build: 
+      context: ./apps/api-gateway
+      dockerfile: Dockerfile
+    container_name: healthcare-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - rabbitmq
+    networks:
+      - healthcare-network
+
+  # 5. Auth Service
+  auth-service:
+    build: 
+      context: ./apps/auth-service
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      DATABASE_URL: "postgresql://admin:password123@postgres:5432/healthcare_platform"
+      JWT_SECRET: "super_secret_healthcare_key_2026"
+    networks:
+      - healthcare-network
+
+  # 6. Appointment Service
+  appointment-service:
+    build: 
+      context: ./apps/appointment-service
+      dockerfile: Dockerfile
+    image: node:24  # Placeholder until Dockerfile is created
+    depends_on:
+      - postgres
+      - rabbitmq
+    environment:
+      DATABASE_URL: "postgresql://admin:password123@postgres:5432/appointment_db"
+    networks:
+      - healthcare-network
+  
+  # 7. AI Service (Symptom Checker)
+  ai-service:
+    build: 
+      context: ./apps/ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      DATABASE_URL: "postgresql://admin:password123@postgres:5432/healthcare_db?schema=public"
+      GEMINI_API_KEY: "AIzaSyAhfmZ8mzkKNof9E8-3-DR2aK9YFqwRzfI" # <--- IMPORTANT: Paste your key here
+    depends_on:
+      - postgres
+    networks:
+      - healthcare-network
+
+  # 8. Frontend (Client)
+  client:
+    build: 
+      context: ./apps/client
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"  # <--- CHANGED FROM 3000
+    volumes:
+      - ./apps/client:/app
+      - /app/node_modules
+    environment:
+      # React runs in the browser, so 'localhost' refers to your computer, which is correct.
+      VITE_API_URL: "http://localhost:8080"
+      VITE_VIDEO_URL: "http://localhost:3003"
+    networks:
+      - healthcare-network
+
+  video-service:
+    build: 
+      context: ./apps/video-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003" # We expose this directly for WebSockets (easier than routing via Gateway initially)
+    networks:
+      - healthcare-network
+
+  notification-service:
+    build: 
+      context: ./apps/notification-service
+      dockerfile: Dockerfile
+    depends_on:
+      - rabbitmq
+    networks:
+      - healthcare-network
+  
+  payment-service:
+    build: 
+      context: ./apps/payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3005"
+    environment:
+      STRIPE_SECRET_KEY: "sk_test_51SnyIpC0ejVuckXrdV6661NPOL8nT0tGI179OMWqYCaMgKiOg1Tanv1vz2GoQWe9mITrrInu0BGzNDHNcSoGEq7l00PhUn3yht" # <--- PASTE YOUR SECRET KEY HERE
+    networks:
+      - healthcare-network
+
+# -----------------------------------------------------------------
+# NETWORKS & VOLUMES
+# -----------------------------------------------------------------
+networks:
+  healthcare-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

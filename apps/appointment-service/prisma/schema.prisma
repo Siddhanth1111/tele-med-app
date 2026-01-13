@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. UPDATE THIS MODEL
+model Appointment {
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  doctorId    Int
+  startTime   DateTime
+  endTime     DateTime
+  reason      String
+  status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  
+  // ADD THIS LINE:
+  prescription Prescription? 
+}
+
+// 2. ADD THESE NEW MODELS
+model Prescription {
+  id            Int      @id @default(autoincrement())
+  appointmentId Int      @unique // One prescription per appointment
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  
+  diagnosis     String
+  remarks       String?  // Doctor's final note
+  medicines     PrescriptionItem[]
+  createdAt     DateTime @default(now())
+}
+
+model PrescriptionItem {
+  id             Int          @id @default(autoincrement())
+  prescriptionId Int
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id])
+  
+  name           String       // Medicine Name
+  quantity       String       // e.g., "10 tablets"
+  instructions   String       // e.g., "After food, 1-0-1"
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
