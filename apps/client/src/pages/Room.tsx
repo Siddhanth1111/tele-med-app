@@ -409,7 +409,7 @@ export default function Room() {
                      </button>
                   </div>
                 </div>
-              )}  
+              )}
       </div>
     </div>
   );
