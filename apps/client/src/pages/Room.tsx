@@ -214,10 +214,23 @@ export default function Room() {
   }
 
   // <--- FIX 3: Ensure Video Plays when Stream Updates --->
+  // <--- FIX 3: Robust Video Player with Retry Logic --->
   useEffect(() => {
     if (remoteVideo.current && remoteStream) {
       remoteVideo.current.srcObject = remoteStream;
-      remoteVideo.current.play().catch(e => console.log("Autoplay blocked:", e));
+      
+      const playVideo = async () => {
+        try {
+          await remoteVideo.current?.play();
+          console.log("Video playing successfully");
+        } catch (err) {
+          console.error("Autoplay failed/aborted. Waiting for user interaction.", err);
+          // If the error is "AbortError", it usually means the element was refreshed.
+          // We don't need to panic, just let the UI settle.
+        }
+      };
+
+      playVideo();
     }
   }, [remoteStream]);
 
@@ -324,7 +337,8 @@ export default function Room() {
                 ref={remoteVideo} 
                 autoPlay 
                 playsInline 
-                className="w-full h-full object-cover"
+                onClick={() => remoteVideo.current?.play()} // <--- Add this line
+                className="w-full h-full object-cover cursor-pointer" // <--- Add cursor-pointer
               />
               
               {/* Waiting Placeholder (Only show if no remote stream) */}
