@@ -74,8 +74,15 @@ export default function Room() {
         streamRef.current = stream;
         if (userVideo.current) userVideo.current.srcObject = stream;
         
-        socket.emit("join-room", roomId, user?.id);
-        setStatus("Waiting for other participant...");
+        setStatus("Setting up connection...");
+
+        // <--- FIX 1: THE SETTLE DELAY --->
+        // Wait 1 second before joining. This prevents the "Race Condition" 
+        // where the call starts before the video player is ready.
+        setTimeout(() => {
+             socket.emit("join-room", roomId, user?.id);
+             setStatus("Waiting for other participant...");
+        }, 1000); 
       })
       .catch(err => {
         console.error("Error accessing media:", err);
@@ -91,6 +98,7 @@ export default function Room() {
       const peer = createPeer(socketId);
       peerRef.current = peer;
 
+      // Create Offer
       peer.createOffer().then(offer => {
         peer.setLocalDescription(offer);
         socket.emit("offer", { target: socketId, caller: socket.id, sdp: offer });
@@ -103,9 +111,7 @@ export default function Room() {
       peerRef.current = peer;
       
       await peer.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-      
-      // Process any queued candidates now that remote description is set
-      processCandidateQueue();
+      processCandidateQueue(); // Process any queued candidates
 
       const answer = await peer.createAnswer();
       await peer.setLocalDescription(answer);
@@ -117,17 +123,13 @@ export default function Room() {
       console.log("Received Answer");
       const peer = peerRef.current;
       
-      // Prevent crash if already connected
       if (!peer || peer.signalingState === "stable") {
         console.warn("Connection stable. Ignoring duplicate answer.");
         return;
       }
 
       peer.setRemoteDescription(new RTCSessionDescription(payload.sdp))
-        .then(() => {
-             // Process any queued candidates
-             processCandidateQueue();
-        })
+        .then(() => processCandidateQueue())
         .catch(e => console.error("Error setting remote description:", e));
     };
 
@@ -138,13 +140,11 @@ export default function Room() {
       if (peer && peer.remoteDescription) {
         peer.addIceCandidate(ice).catch(e => console.error("Error adding ice:", e));
       } else {
-        // Queue it if we aren't ready yet
-        console.log("Queueing ICE candidate");
         candidateQueue.current.push(ice);
       }
     };
 
-    // Clean up old listeners to prevent duplicates
+    // Clean up old listeners
     socket.off("user-connected");
     socket.off("offer");
     socket.off("answer");
@@ -394,6 +394,22 @@ export default function Room() {
               <div className="p-4"><button onClick={submitPrescription} className="w-full bg-green-600 text-white p-3 rounded">Submit</button></div>
            </div>
         )}
+        {/* Waiting Placeholder / Retry Button */}
+              {!remoteStream && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
+                  <div className="text-center">
+                     <p className="text-gray-500 mb-4">Waiting for participant...</p>
+                     
+                     {/* <--- FIX 2: MANUAL RETRY BUTTON ---> */}
+                     <button 
+                       onClick={() => window.location.reload()}
+                       className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-400 px-3 py-1 rounded border border-gray-700"
+                     >
+                        Stuck? Click to Retry
+                     </button>
+                  </div>
+                </div>
+              )}  
       </div>
     </div>
   );
