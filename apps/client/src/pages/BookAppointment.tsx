@@ -120,10 +120,10 @@ export default function BookAppointment() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white flex items-center justify-center">
+        <div className="min-h-screen bg-gray-950 flex items-center justify-center">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium">Finding the best doctors for you...</p>
+            <p className="text-gray-400 font-medium">Finding the best doctors for you...</p>
           </div>
         </div>
       </>
@@ -133,16 +133,16 @@ export default function BookAppointment() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
+      <div className="min-h-screen bg-gray-950">
         
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white py-16">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-800 py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
                 Find Your Perfect Doctor
               </h1>
-              <p className="text-xl text-teal-100">
+              <p className="text-xl text-gray-400">
                 Book appointments with verified specialists across {specializations.length - 1} specializations
               </p>
             </div>
@@ -152,13 +152,13 @@ export default function BookAppointment() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 pb-12">
           
           {message && (
-            <div className="mb-6 p-4 bg-teal-50 border-l-4 border-teal-600 rounded-lg shadow-sm">
-              <p className="text-teal-900 font-medium">{message}</p>
+            <div className="mb-6 p-4 bg-teal-500/10 border-l-4 border-teal-500 rounded-lg shadow-lg">
+              <p className="text-teal-400 font-medium">{message}</p>
             </div>
           )}
 
           {/* Filters Card */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl p-6 mb-8 border border-gray-700">
             <DoctorFilters
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -174,23 +174,23 @@ export default function BookAppointment() {
           {/* Results Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-white">
                 {filteredDoctors.length} {filteredDoctors.length === 1 ? 'Doctor' : 'Doctors'} Available
               </h2>
-              <p className="text-gray-600 mt-1">Book instant video consultations</p>
+              <p className="text-gray-400 mt-1">Book instant video consultations</p>
             </div>
           </div>
 
           {/* Doctors Grid */}
           {filteredDoctors.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-lg p-16 text-center border border-gray-100">
-              <div className="w-32 h-32 bg-gradient-to-br from-teal-50 to-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl p-16 text-center border border-gray-700">
+              <div className="w-32 h-32 bg-gradient-to-br from-teal-500/10 to-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-teal-500/20">
                 <svg className="w-16 h-16 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">No doctors found</h3>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              <h3 className="text-2xl font-bold text-white mb-3">No doctors found</h3>
+              <p className="text-gray-400 mb-8 max-w-md mx-auto">
                 Try adjusting your search filters to find more doctors
               </p>
               <button 
@@ -199,7 +199,7 @@ export default function BookAppointment() {
                   setSpecializationFilter('All');
                   setFeeFilter(500);
                 }}
-                className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-xl font-semibold shadow-md transition transform hover:scale-105"
+                className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg transition transform hover:scale-105"
               >
                 Clear All Filters
               </button>
@@ -229,8 +229,8 @@ export default function BookAppointment() {
 
       {/* Payment Modal */}
       {showPayment && clientSecret && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night' } }}>
             <CheckoutForm 
               amount={50} 
               onSuccess={finalizeBooking}

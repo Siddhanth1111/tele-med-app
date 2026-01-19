@@ -37,11 +37,11 @@ export const DateFilter: React.FC<DateFilterProps> = ({
             type="date"
             value={selectedDate}
             onChange={(e) => onDateChange(e.target.value)}
-            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none text-white"
           />
         </div>
         {appointmentCount !== undefined && (
-          <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap">
+          <div className="bg-teal-500/20 text-teal-400 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap border border-teal-500/30">
             {appointmentCount} {appointmentCount === 1 ? 'Appointment' : 'Appointments'}
           </div>
         )}
@@ -55,8 +55,8 @@ export const DateFilter: React.FC<DateFilterProps> = ({
               onClick={() => onDateChange(filter.value)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                 selectedDate === filter.value
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-teal-500 text-white shadow-lg'
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
             >
               {filter.label}
