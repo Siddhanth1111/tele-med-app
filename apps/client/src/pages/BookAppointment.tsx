@@ -20,17 +20,14 @@ export default function BookAppointment() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
-  // Payment Modal State
   const [clientSecret, setClientSecret] = useState("");
   const [showPayment, setShowPayment] = useState(false);
   const [pendingBooking, setPendingBooking] = useState<{doctorId: number, time: string} | null>(null);
 
-  // Slot Management
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [expandedDoctorId, setExpandedDoctorId] = useState<number | null>(null);
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
 
-  // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
   const [specializationFilter, setSpecializationFilter] = useState('All');
   const [feeFilter, setFeeFilter] = useState<number>(500);
@@ -123,10 +120,10 @@ export default function BookAppointment() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white flex items-center justify-center">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium">Finding doctors for you...</p>
+            <p className="text-gray-600 font-medium">Finding the best doctors for you...</p>
           </div>
         </div>
       </>
@@ -136,73 +133,80 @@ export default function BookAppointment() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          
-          {/* Page Header */}
-          <div className="mb-8">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Dashboard
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Book an Appointment</h1>
-            <p className="text-gray-600">Find and consult with our qualified doctors</p>
+      <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
+        
+        {/* Hero Section */}
+        <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                Find Your Perfect Doctor
+              </h1>
+              <p className="text-xl text-teal-100">
+                Book appointments with verified specialists across {specializations.length - 1} specializations
+              </p>
+            </div>
           </div>
+        </div>
 
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 pb-12">
+          
           {message && (
-            <div className="mb-6 p-4 bg-teal-50 border border-teal-200 text-teal-800 rounded-lg">
-              {message}
+            <div className="mb-6 p-4 bg-teal-50 border-l-4 border-teal-600 rounded-lg shadow-sm">
+              <p className="text-teal-900 font-medium">{message}</p>
             </div>
           )}
 
-          {/* Filters */}
-          <DoctorFilters
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            specialization={specializationFilter}
-            onSpecializationChange={setSpecializationFilter}
-            feeRange={feeFilter}
-            onFeeRangeChange={setFeeFilter}
-            specializations={specializations}
-            maxFee={500}
-          />
-
-          {/* Results Count */}
-          <div className="mb-4">
-            <p className="text-gray-600">
-              <span className="font-semibold text-gray-900">{filteredDoctors.length}</span> doctors available
-            </p>
+          {/* Filters Card */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
+            <DoctorFilters
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              specialization={specializationFilter}
+              onSpecializationChange={setSpecializationFilter}
+              feeRange={feeFilter}
+              onFeeRangeChange={setFeeFilter}
+              specializations={specializations}
+              maxFee={500}
+            />
           </div>
 
-          {/* Doctors List */}
-          <div className="space-y-4">
-            {filteredDoctors.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No doctors found</h3>
-                <p className="text-gray-600 mb-6">Try adjusting your filters</p>
-                <button 
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSpecializationFilter('All');
-                    setFeeFilter(500);
-                  }}
-                  className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium transition"
-                >
-                  Clear Filters
-                </button>
+          {/* Results Header */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {filteredDoctors.length} {filteredDoctors.length === 1 ? 'Doctor' : 'Doctors'} Available
+              </h2>
+              <p className="text-gray-600 mt-1">Book instant video consultations</p>
+            </div>
+          </div>
+
+          {/* Doctors Grid */}
+          {filteredDoctors.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-lg p-16 text-center border border-gray-100">
+              <div className="w-32 h-32 bg-gradient-to-br from-teal-50 to-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-16 h-16 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
-            ) : (
-              filteredDoctors.map((doc) => (
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">No doctors found</h3>
+              <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                Try adjusting your search filters to find more doctors
+              </p>
+              <button 
+                onClick={() => {
+                  setSearchQuery('');
+                  setSpecializationFilter('All');
+                  setFeeFilter(500);
+                }}
+                className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-xl font-semibold shadow-md transition transform hover:scale-105"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredDoctors.map((doc) => (
                 <DoctorCard
                   key={doc.id}
                   doctor={doc}
@@ -217,13 +221,13 @@ export default function BookAppointment() {
                     minDate={new Date().toISOString().split('T')[0]}
                   />
                 </DoctorCard>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* PAYMENT MODAL */}
+      {/* Payment Modal */}
       {showPayment && clientSecret && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>

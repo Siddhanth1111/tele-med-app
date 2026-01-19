@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 
 interface Message {
@@ -13,17 +12,13 @@ interface Message {
 
 export default function AiChat() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  // Auto-scroll to bottom
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const gatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-  // 1. Fetch Chat History on Load
   useEffect(() => {
     if (!user) return;
     
@@ -34,10 +29,8 @@ export default function AiChat() {
         }
       })
       .catch(err => console.error("Failed to load chat", err));
-
   }, [user]);
 
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -46,219 +39,203 @@ export default function AiChat() {
     if (!input.trim()) return;
 
     const userText = input;
-    setInput(''); // Clear input immediately
+    setInput('');
     setLoading(true);
 
-    // Optimistically update UI
     const tempUserMsg: Message = { sender: 'user', text: userText };
     setMessages(prev => [...prev, tempUserMsg]);
 
     try {
-      // Send to AI Service
       const res = await axios.post(`${gatewayUrl}/api/ai/chat`, {
         patientId: user?.id,
         text: userText
       });
 
-      // Add AI Response to UI
       const aiMsg: Message = res.data;
       setMessages(prev => [...prev, aiMsg]);
-
     } catch (err) {
       console.error("Chat failed", err);
-      // Show error message in chat
       setMessages(prev => [...prev, { 
         sender: 'ai', 
-        text: "Sorry, I'm having trouble connecting right now. Please try again in a moment." 
+        text: "I'm having trouble connecting right now. Please try again in a moment." 
       }]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Quick prompts for common queries
   const quickPrompts = [
     "I have a headache and fever",
     "Feeling dizzy and nauseous",
     "Persistent cough for 3 days",
-    "Chest pain and shortness of breath"
+    "How can I improve my sleep quality?"
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
-      {/* Header */}
+    <>
       <Header />
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-2xl">🤖</span>
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-            </div>
-            <div>
-              <h1 className="font-bold text-xl text-gray-900">AI Health Assistant</h1>
-              <p className="text-sm text-gray-500 flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Online • Powered by Gemini Pro
-              </p>
-            </div>
-          </div>
-          {/* <button 
-            onClick={() => navigate('/dashboard')} 
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Dashboard
-          </button> */}
-        </div>
-      </div>
-
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+      <div className="flex flex-col h-screen bg-white">
+        
+        {/* Chat Container */}
+        <div className="flex-1 overflow-hidden flex flex-col">
           
-          {/* Welcome Screen */}
-          {messages.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
-                <span className="text-4xl">🤖</span>
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                Hello, {user?.name}! 👋
-              </h2>
-              <p className="text-gray-600 text-lg mb-2">
-                I'm your AI health assistant, here to help with symptoms and medical questions.
-              </p>
-              <p className="text-sm text-gray-500 mb-8">
-                <span className="inline-flex items-center gap-2 bg-amber-50 text-amber-800 px-3 py-1 rounded-full border border-amber-200">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  For guidance only - Not a replacement for professional medical advice
-                </span>
-              </p>
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-4xl mx-auto px-4 py-8">
+              
+              {/* Welcome Screen */}
+              {messages.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl rotate-3 hover:rotate-0 transition">
+                    <svg className="w-11 h-11 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                  <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                    Hi {user?.name}, I'm your AI Health Assistant
+                  </h1>
+                  <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+                    I can help you understand your symptoms and provide health guidance. How are you feeling today?
+                  </p>
 
-              {/* Quick Prompts */}
-              <div className="max-w-2xl mx-auto">
-                <p className="text-sm font-semibold text-gray-700 mb-3">Try asking about:</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {quickPrompts.map((prompt, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setInput(prompt)}
-                      className="bg-white border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50 text-gray-700 px-4 py-3 rounded-xl text-sm text-left transition-all group"
-                    >
-                      <span className="block font-medium group-hover:text-purple-700">{prompt}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+                  {/* Quick Prompts */}
+                  <div className="max-w-3xl mx-auto">
+                    <p className="text-sm font-semibold text-gray-700 mb-4">Try asking:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {quickPrompts.map((prompt, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setInput(prompt)}
+                          className="bg-white border-2 border-gray-200 hover:border-purple-400 hover:bg-purple-50 text-gray-700 px-5 py-4 rounded-2xl text-left transition group shadow-sm hover:shadow-md"
+                        >
+                          <div className="flex items-start gap-3">
+                            <svg className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                            </svg>
+                            <span className="text-sm font-medium group-hover:text-purple-700">{prompt}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-          {/* Messages */}
-          {messages.map((msg, index) => (
-            <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-              <div className={`flex gap-3 max-w-[85%] ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                {/* Avatar */}
-                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                  msg.sender === 'user' 
-                    ? 'bg-gradient-to-br from-blue-600 to-teal-600' 
-                    : 'bg-gradient-to-br from-purple-600 to-indigo-600'
-                } shadow-md`}>
-                  <span className="text-lg">
-                    {msg.sender === 'user' ? user?.name.charAt(0).toUpperCase() : '🤖'}
-                  </span>
-                </div>
-
-                {/* Message Bubble */}
-                <div className={`px-5 py-3 rounded-2xl shadow-sm ${
-                  msg.sender === 'user' 
-                    ? 'bg-gradient-to-br from-blue-600 to-teal-600 text-white rounded-tr-sm' 
-                    : 'bg-white text-gray-800 rounded-tl-sm border border-gray-200'
-                }`}>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-                  {msg.timestamp && (
-                    <p className={`text-xs mt-2 ${msg.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
-                      {new Date(msg.timestamp).toLocaleTimeString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-          
-          {/* Loading Indicator */}
-          {loading && (
-            <div className="flex justify-start animate-fade-in">
-              <div className="flex gap-3 max-w-[85%]">
-                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
-                  <span className="text-lg">🤖</span>
-                </div>
-                <div className="bg-white text-gray-800 px-5 py-3 rounded-2xl rounded-tl-sm border border-gray-200 shadow-sm">
-                  <div className="flex gap-2 items-center">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                    <span className="ml-2 text-sm text-gray-500">Thinking...</span>
+                  {/* Disclaimer */}
+                  <div className="mt-12 max-w-2xl mx-auto bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-amber-900 mb-1">Important Notice</p>
+                        <p className="text-sm text-amber-800">This AI provides guidance only and is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              )}
+
+              {/* Messages */}
+              <div className="space-y-6">
+                {messages.map((msg, index) => (
+                  <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`flex gap-3 max-w-3xl ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                      
+                      {/* Avatar */}
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                        msg.sender === 'user' 
+                          ? 'bg-gradient-to-br from-teal-500 to-blue-600' 
+                          : 'bg-gradient-to-br from-purple-500 to-indigo-600'
+                      } shadow-md`}>
+                        {msg.sender === 'user' ? (
+                          <span className="text-white font-semibold text-sm">
+                            {user?.name.charAt(0).toUpperCase()}
+                          </span>
+                        ) : (
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                        )}
+                      </div>
+
+                      {/* Message Bubble */}
+                      <div className={`flex-1 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>
+                        <div className={`inline-block px-6 py-4 rounded-3xl ${
+                          msg.sender === 'user' 
+                            ? 'bg-gradient-to-r from-teal-600 to-blue-600 text-white rounded-tr-md' 
+                            : 'bg-gray-100 text-gray-900 rounded-tl-md'
+                        } shadow-sm`}>
+                          <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                        </div>
+                        {msg.timestamp && (
+                          <p className="text-xs text-gray-500 mt-2 px-2">
+                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          )}
-          
+              
+              {/* Loading Indicator */}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="flex gap-3 max-w-3xl">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center shadow-md">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+</svg>
+</div>
+<div className="bg-gray-100 px-6 py-4 rounded-3xl rounded-tl-md shadow-sm">
+<div className="flex gap-2">
+<div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+<div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+<div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+</div>
+</div>
+</div>
+</div>
+)}
           <div ref={bottomRef} />
         </div>
       </div>
 
       {/* Input Area */}
-      <div className="bg-white border-t border-gray-200 shadow-lg">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex gap-3 items-end">
-            <div className="flex-1 relative">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder="Describe your symptoms or ask a health question..."
-                rows={1}
-                className="w-full bg-gray-50 text-gray-900 px-4 py-3 pr-12 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:bg-white focus:outline-none resize-none transition"
-                style={{ minHeight: '48px', maxHeight: '120px' }}
-              />
-              <button
-                onClick={handleSend}
-                disabled={loading || !input.trim()}
-                className="absolute right-2 bottom-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white p-2.5 rounded-lg transition transform hover:scale-105 active:scale-95 shadow-lg"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </button>
-            </div>
+      <div className="border-t border-gray-200 bg-white">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="relative">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Message AI Health Assistant..."
+              rows={1}
+              className="w-full bg-gray-100 text-gray-900 px-6 py-4 pr-14 rounded-3xl border-2 border-transparent focus:border-purple-400 focus:bg-white outline-none resize-none transition text-base"
+              style={{ minHeight: '56px', maxHeight: '200px' }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={loading || !input.trim()}
+              className="absolute right-2 bottom-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white p-3 rounded-full transition transform hover:scale-105 active:scale-95 shadow-lg"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
           </div>
           
-          {/* Tips */}
-          <div className="mt-3 flex items-center justify-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              Press Enter to send
-            </span>
-            <span className="hidden sm:inline">•</span>
-            <span className="hidden sm:inline">Shift + Enter for new line</span>
-          </div>
+          <p className="text-xs text-gray-500 text-center mt-3">
+            Press Enter to send • Shift + Enter for new line
+          </p>
         </div>
       </div>
     </div>
-  );
+  </div>
+</>
+);
 }
