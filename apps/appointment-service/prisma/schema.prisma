@@ -18,8 +18,35 @@ model Appointment {
   reason      String
   status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
   
+  // 🔗 Relations
+  patient   User @relation("PatientAppointments", fields: [patientId], references: [id])
+  doctor    User @relation("DoctorAppointments", fields: [doctorId], references: [id])
+
   // ADD THIS LINE:
   prescription Prescription? 
+}
+
+// 👻 THE GHOST MODEL (Minimal copy of User)
+// We only include fields we need to display in the Appointment Card
+model User {
+  id    Int     @id 
+  name  String?
+  email String 
+  
+  // We need these relations just to satisfy Prisma, even if we don't use them directly
+  patientAppointments Appointment[] @relation("PatientAppointments")
+  doctorAppointments  Appointment[] @relation("DoctorAppointments")
+
+  // 👻 GHOST DOCTOR PROFILE (Minimal copy)
+  doctorProfile DoctorProfile?
+}
+
+// 👻 GHOST DOCTOR PROFILE
+model DoctorProfile {
+  id             Int    @id 
+  userId         Int    @unique
+  specialization String
+  user           User   @relation(fields: [userId], references: [id])
 }
 
 // 2. ADD THESE NEW MODELS
