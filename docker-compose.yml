@@ -71,7 +71,7 @@ services:
       - postgres
       - rabbitmq
     environment:
-      DATABASE_URL: "postgresql://admin:password123@postgres:5432/healthcare_platform"
+      DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: "super_secret_healthcare_key_2026"
     networks:
       - healthcare-network
@@ -86,7 +86,7 @@ services:
       - postgres
       - rabbitmq
     environment:
-      DATABASE_URL: "postgresql://admin:password123@postgres:5432/appointment_db"
+      DATABASE_URL: ${DATABASE_URL}
     networks:
       - healthcare-network
   
