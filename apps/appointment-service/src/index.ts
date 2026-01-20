@@ -40,11 +40,6 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = 3002; // Note: Different port from Auth (3001)
 
-
-
-
-
-
 // ... rest of the file ...
 
 app.use(cors());
@@ -133,6 +128,8 @@ app.get('/my-appointments/:userId', async (req, res) => {
 // apps/appointment-service/src/index.ts
 
 // NEW API: Get Available Slots
+// apps/appointment-service/src/index.ts
+
 app.get('/availability', async (req, res) => {
   try {
     const { doctorId, date } = req.query;
@@ -141,16 +138,17 @@ app.get('/availability', async (req, res) => {
       return res.status(400).json({ error: "Doctor ID and Date are required" });
     }
 
-    // 1. Define the Doctor's Schedule (Hardcoded: 9 AM to 12 PM)
-    const startHour = 9;
-    const endHour = 12; 
-    const slotDuration = 30; // minutes
+    // 1. Define Doctor's Schedule in IST (9 AM to 12 PM)
+    const startHourIST = 9;
+    const endHourIST = 12; 
+    const slotDuration = 30; 
 
-    // 2. Fetch all existing appointments for that specific date
+    // 2. Parse the date
     const searchDate = new Date(date as string);
-    // Create range for the whole day to filter DB
-    const startOfDay = new Date(searchDate); startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(searchDate); endOfDay.setHours(23, 59, 59, 999);
+    
+    // Create range for DB filtering (Whole Day)
+    const startOfDay = new Date(searchDate); startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(searchDate); endOfDay.setUTCHours(23, 59, 59, 999);
 
     const existingBookings = await prisma.appointment.findMany({
       where: {
@@ -159,32 +157,43 @@ app.get('/availability', async (req, res) => {
           gte: startOfDay,
           lte: endOfDay
         },
-        status: 'SCHEDULED' // Only count scheduled ones
+        status: 'SCHEDULED'
       }
     });
 
-    // 3. Generate all possible slots and check conflicts
+    // 3. Generate Slots (FIXED FOR IST)
     const slots = [];
-    // Start generating from 9:00 AM on the requested date
+    
+    // Start at 9:00 AM UTC first
     let currentTime = new Date(searchDate);
-    currentTime.setHours(startHour, 0, 0, 0);
+    currentTime.setUTCHours(startHourIST, 0, 0, 0); 
 
-    // Stop when we reach 12:00 PM
-    while (currentTime.getHours() < endHour) {
+    // Shift Time BACK by 5.5 Hours to convert IST -> UTC
+    // 9:00 AM IST = 3:30 AM UTC
+    currentTime.setMinutes(currentTime.getMinutes() - 330); 
+
+    // Calculate End Time in UTC (12:00 PM IST - 5.5 hours)
+    const endTime = new Date(currentTime);
+    endTime.setHours(endTime.getHours() + (endHourIST - startHourIST));
+
+    while (currentTime < endTime) {
       
-      // Check if this specific time is already in the database
       const isBooked = existingBookings.some(booking => {
         const bookingTime = new Date(booking.startTime);
         return bookingTime.getTime() === currentTime.getTime();
       });
 
       slots.push({
-        time: currentTime.toISOString(), // We need the full ISO string for booking
-        displayTime: currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), // For UI (09:00 AM)
+        time: currentTime.toISOString(), // Saves as 03:30 UTC
+        // Display in IST format specifically for the UI response
+        displayTime: currentTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'Asia/Kolkata' // <--- Forces 9:00 AM display
+        }),
         available: !isBooked
       });
 
-      // Jump forward 30 minutes
       currentTime.setMinutes(currentTime.getMinutes() + slotDuration);
     }
 

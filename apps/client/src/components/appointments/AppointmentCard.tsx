@@ -63,16 +63,23 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
               {userRole === 'PATIENT' && appointment.doctor?.doctorProfile?.specialization && (
                 <p className="text-sm text-gray-400">{appointment.doctor.doctorProfile.specialization}</p>
               )}
+              {/* --- TIME DISPLAY FIX --- */}
               <p className="text-sm text-gray-500">
-                {new Date(appointment.startTime).toLocaleDateString('en-US', { 
+                {new Date(appointment.startTime).toLocaleDateString('en-IN', { 
                   month: 'short', 
                   day: 'numeric',
-                  year: 'numeric'
-                })} • {new Date(appointment.startTime).toLocaleTimeString('en-US', { 
+                  year: 'numeric',
+                  timeZone: 'Asia/Kolkata' // <--- Force IST Date
+                })} 
+                {' • '} 
+                {new Date(appointment.startTime).toLocaleTimeString('en-IN', { 
                   hour: '2-digit', 
-                  minute: '2-digit'
+                  minute: '2-digit',
+                  hour12: true,
+                  timeZone: 'Asia/Kolkata' // <--- Force IST Time
                 })}
               </p>
+              {/* ------------------------ */}
             </div>
           </div>
 
