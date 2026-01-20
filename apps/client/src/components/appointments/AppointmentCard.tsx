@@ -45,7 +45,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
   };
 
   const otherPerson = userRole === 'DOCTOR' ? appointment.patient : appointment.doctor;
-  const personName = otherPerson?.name || 'Unknown';
+  const personName = otherPerson?.name || 'Appointment';
 
   return (
     <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 p-6 hover:shadow-2xl hover:border-gray-600 transition">
