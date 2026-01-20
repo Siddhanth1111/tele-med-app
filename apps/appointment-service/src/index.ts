@@ -111,18 +111,49 @@ app.post('/book', async (req, res) => {
 });
 
 // API: GET MY APPOINTMENTS
+// API: GET MY APPOINTMENTS (Updated with Relations)
 app.get('/my-appointments/:userId', async (req, res) => {
-  const { userId } = req.params;
-  const appointments = await prisma.appointment.findMany({
-    where: {
-      OR: [
-        { patientId: Number(userId) },
-        { doctorId: Number(userId) }
-      ]
-    },
-    orderBy: { startTime: 'asc' }
-  });
-  res.json(appointments);
+  try {
+    const { userId } = req.params;
+
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        OR: [
+          { patientId: Number(userId) },
+          { doctorId: Number(userId) }
+        ]
+      },
+      // ---------------------------------------------------------
+      // 👇 THE FIX: We must explicitly ask for the related data
+      // ---------------------------------------------------------
+      include: {
+        patient: {
+          select: {
+            name: true,
+            email: true
+          }
+        },
+        doctor: {
+          select: {
+            name: true,
+            // We also need the profile for the specialization
+            doctorProfile: {
+              select: {
+                specialization: true
+              }
+            }
+          }
+        }
+      },
+      // ---------------------------------------------------------
+      orderBy: { startTime: 'asc' }
+    });
+
+    res.json(appointments);
+  } catch (error) {
+    console.error("Fetch Appointments Error:", error);
+    res.status(500).json({ error: "Failed to fetch appointments" });
+  }
 });
 
 // apps/appointment-service/src/index.ts
