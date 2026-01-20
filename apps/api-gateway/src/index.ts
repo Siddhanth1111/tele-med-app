@@ -1,11 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import rateLimiter from "./middleware/rateLimiter";
 
 const app = express();
 const PORT = 8080;
 
 app.use(cors());
+app.use(rateLimiter);
 // app.use(express.json());
 
 // HEALTH CHECK (To confirm it's running)

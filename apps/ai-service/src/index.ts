@@ -1,8 +1,10 @@
+// apps/ai-service/src/index.ts
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
-import axios from 'axios'; // We will use axios directly
+import axios from 'axios'; 
 import dotenv from 'dotenv';
+import redis from './config/redis'; // <--- Import Redis
 
 dotenv.config();
 
@@ -13,7 +15,7 @@ const PORT = 3004;
 app.use(cors());
 app.use(express.json());
 
-// API: Get Chat History
+// API: Get Chat History (No changes needed here)
 app.get('/history/:patientId', async (req, res) => {
   try {
     const { patientId } = req.params;
@@ -35,7 +37,7 @@ app.get('/history/:patientId', async (req, res) => {
   }
 });
 
-// API: Send Message (The Fix)
+// API: Send Message with REDIS CACHING
 app.post('/chat', async (req, res) => {
   try {
     const { patientId, text } = req.body;
@@ -54,20 +56,42 @@ app.post('/chat', async (req, res) => {
       data: { chatId: session.id, sender: 'user', text: text }
     });
 
-    // 3. Call Gemini API via HTTP (No Library)
-    const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // --- REDIS CACHING START ---
+    
+    // Create a unique cache key based on the question
+    // "trim()" removes spaces so " fever " and "fever" use the same cache
+    const cacheKey = `ai_response:${text.trim().toLowerCase()}`;
+    
+    let aiText = "";
 
-    const aiRes = await axios.post(url, {
-      contents: [{
-        parts: [{ text: `You are a helpful medical assistant. The patient says: "${text}". Provide brief guidance.` }]
-      }]
-    });
+    // 3. Check Redis Cache
+    const cachedResponse = await redis.get(cacheKey);
 
-    // Extract the text safely
-    const aiText = aiRes.data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't understand that.";
+    if (cachedResponse) {
+      console.log("⚡ Serving response from Redis Cache");
+      aiText = cachedResponse;
+    } else {
+      console.log("🤖 Cache Miss - Calling Gemini API");
+      
+      // 4. Call Gemini API (Only if not in cache)
+      const apiKey = process.env.GEMINI_API_KEY;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-    // 4. Save AI Message
+      const aiRes = await axios.post(url, {
+        contents: [{
+          parts: [{ text: `You are a helpful medical assistant. The patient says: "${text}". Provide brief guidance.` }]
+        }]
+      });
+
+      aiText = aiRes.data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't understand that.";
+
+      // 5. Save to Redis (Expires in 1 hour / 3600 seconds)
+      await redis.setex(cacheKey, 3600, aiText);
+    }
+    // --- REDIS CACHING END ---
+
+    // 6. Save AI Message to Database
+    // We save it even if it came from cache, so the chat history is preserved
     const aiMessage = await prisma.message.create({
       data: { chatId: session.id, sender: 'ai', text: aiText }
     });
