@@ -1,14 +1,14 @@
 import React from 'react';
 
 interface TimeSlot {
-  time: string;
-  displayTime: string;
+  time: string;         // ISO String (e.g., "2023-10-27T10:00:00.000Z")
+  displayTime: string;  // Formatted Time (e.g., "10:00 AM")
   available: boolean;
 }
 
 interface SlotPickerProps {
   slots: TimeSlot[];
-  selectedDate: string;
+  selectedDate: string; // YYYY-MM-DD format
   onDateChange: (date: string) => void;
   onSlotSelect: (time: string) => void;
   minDate?: string;
@@ -21,8 +21,39 @@ export const SlotPicker: React.FC<SlotPickerProps> = ({
   onSlotSelect,
   minDate,
 }) => {
-  const today = new Date().toISOString().split('T')[0];
-  const minimumDate = minDate || today;
+  // 1. Get Current Time in IST
+  // We create a date object and shift it to IST for accurate day comparison
+  const now = new Date();
+  const utcOffset = now.getTime() + now.getTimezoneOffset() * 60000;
+  const istOffset = 5.5 * 60 * 60 * 1000; // +5:30
+  const istDate = new Date(utcOffset + istOffset);
+
+  // Format IST Today as YYYY-MM-DD
+  const todayIST = istDate.toISOString().split('T')[0];
+  
+  const minimumDate = minDate || todayIST;
+
+  // 2. Logic to disable past slots
+  const processedSlots = slots.map(slot => {
+    // If the slot is already booked, keep it unavailable
+    if (!slot.available) return slot;
+
+    // Check if the selected date is today
+    if (selectedDate === todayIST) {
+      // Parse the slot time
+      // Assuming 'slot.time' is a full ISO string. 
+      // If it is just "10:00", we need to construct a date object.
+      // Based on your previous context, slot.time is likely an ISO string from the backend.
+      const slotTime = new Date(slot.time);
+      
+      // Compare timestamps
+      if (slotTime.getTime() < new Date().getTime()) {
+        return { ...slot, available: false, isPast: true }; 
+      }
+    }
+
+    return { ...slot, isPast: false };
+  });
 
   return (
     <div className="space-y-4">
@@ -43,10 +74,10 @@ export const SlotPicker: React.FC<SlotPickerProps> = ({
       {/* Time Slots */}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-3">
-          Available Time Slots
+          Available Time Slots (IST)
         </label>
         
-        {slots.length === 0 ? (
+        {processedSlots.length === 0 ? (
           <div className="text-center py-8 bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-700">
             <svg className="w-12 h-12 text-gray-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -55,23 +86,29 @@ export const SlotPicker: React.FC<SlotPickerProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-3">
-            {slots.map((slot, index) => (
-              <button
-                key={index}
-                disabled={!slot.available}
-                onClick={() => slot.available && onSlotSelect(slot.time)}
-                className={`p-3 rounded-lg text-sm font-medium transition transform hover:scale-105 ${
-                  slot.available 
-                    ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 border-2 border-green-500/30 shadow-sm" 
-                    : "bg-gray-800/50 text-gray-600 cursor-not-allowed border-2 border-gray-700"
-                }`}
-              >
-                {slot.displayTime}
-                {!slot.available && (
-                  <span className="block text-xs mt-1">Booked</span>
-                )}
-              </button>
-            ))}
+            {processedSlots.map((slot: any, index) => {
+              // Determine status for styling
+              const isBooked = !slot.available && !slot.isPast;
+              const isPast = slot.isPast;
+              const isAvailable = slot.available;
+
+              return (
+                <button
+                  key={index}
+                  disabled={!isAvailable}
+                  onClick={() => isAvailable && onSlotSelect(slot.time)}
+                  className={`p-3 rounded-lg text-sm font-medium transition transform ${
+                    isAvailable 
+                      ? "bg-green-500/20 text-green-400 hover:bg-green-500/30 border-2 border-green-500/30 shadow-sm hover:scale-105" 
+                      : "bg-gray-800/50 text-gray-600 cursor-not-allowed border-2 border-gray-700"
+                  }`}
+                >
+                  {slot.displayTime}
+                  {isBooked && <span className="block text-xs mt-1 text-red-400/70">Booked</span>}
+                  {isPast && <span className="block text-xs mt-1 text-gray-500">Expired</span>}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -84,7 +121,7 @@ export const SlotPicker: React.FC<SlotPickerProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-gray-800/50 border-2 border-gray-700 rounded"></div>
-          <span className="text-xs text-gray-400">Booked</span>
+          <span className="text-xs text-gray-400">Unavailable</span>
         </div>
       </div>
     </div>
