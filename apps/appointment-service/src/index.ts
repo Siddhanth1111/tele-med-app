@@ -147,15 +147,16 @@ app.get('/availability', async (req, res) => {
       return res.status(400).json({ error: "Doctor ID and Date are required" });
     }
 
-    // 1. Define Doctor's Schedule in IST (9 AM to 12 PM)
-    const startHourIST = 9;
-    const endHourIST = 12; 
+    // --- CHANGE 1: Update Range to 0 - 24 (Full Day) ---
+    const startHourIST = 0;  // 12:00 AM
+    const endHourIST = 24;   // 12:00 AM (Next Day) - Loop stops before this
     const slotDuration = 30; 
 
     // 2. Parse the date
     const searchDate = new Date(date as string);
     
     // Create range for DB filtering (Whole Day)
+    // We use UTC 00:00 to 23:59 to ensure we catch all bookings for that calendar date
     const startOfDay = new Date(searchDate); startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(searchDate); endOfDay.setUTCHours(23, 59, 59, 999);
 
@@ -173,15 +174,17 @@ app.get('/availability', async (req, res) => {
     // 3. Generate Slots (FIXED FOR IST)
     const slots = [];
     
-    // Start at 9:00 AM UTC first
+    // Start base time
     let currentTime = new Date(searchDate);
+    
+    // Set to 00:00 UTC first
     currentTime.setUTCHours(startHourIST, 0, 0, 0); 
 
     // Shift Time BACK by 5.5 Hours to convert IST -> UTC
-    // 9:00 AM IST = 3:30 AM UTC
+    // 00:00 IST is 18:30 UTC on the previous day
     currentTime.setMinutes(currentTime.getMinutes() - 330); 
 
-    // Calculate End Time in UTC (12:00 PM IST - 5.5 hours)
+    // Calculate End Time (Add 24 hours to the start time)
     const endTime = new Date(currentTime);
     endTime.setHours(endTime.getHours() + (endHourIST - startHourIST));
 
@@ -193,12 +196,12 @@ app.get('/availability', async (req, res) => {
       });
 
       slots.push({
-        time: currentTime.toISOString(), // Saves as 03:30 UTC
-        // Display in IST format specifically for the UI response
+        time: currentTime.toISOString(), 
+        // Display in IST format
         displayTime: currentTime.toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
-          timeZone: 'Asia/Kolkata' // <--- Forces 9:00 AM display
+          timeZone: 'Asia/Kolkata' 
         }),
         available: !isBooked
       });

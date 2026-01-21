@@ -29,7 +29,7 @@
 
 ### **Backend**
 * **Node.js & Express** - Main API Gateway and business logic.
-* **Python (Flask)** - Dedicated AI microservice.
+Dedicated AI microservice.
 * **Socket.io** - Real-time signaling for calls.
 
 ### **Database & DevOps**
