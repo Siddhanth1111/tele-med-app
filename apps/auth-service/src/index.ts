@@ -226,6 +226,38 @@ app.put('/profile/:id/password', async (req, res) => {
   }
 });
 
+// ... imports and setup
+
+// 👇 ADD THIS NEW ROUTE
+app.get('/user/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id: Number(id) },
+      include: { doctorProfile: true } // Get specialization too
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Return public info only (No password!)
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      doctorProfile: user.doctorProfile
+    });
+
+  } catch (error) {
+    console.error("Get User Error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ... app.listen
+
 // CATCH-ALL ROUTE: Handle unmatched requests to prevent hanging/aborted requests
 app.use('*', (req, res) => {
   res.status(404).json({ error: "Route not found in Auth Service" });
