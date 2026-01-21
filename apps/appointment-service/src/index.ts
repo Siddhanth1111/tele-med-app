@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
+
 import amqp from 'amqplib';
 
 
@@ -123,29 +124,6 @@ app.get('/my-appointments/:userId', async (req, res) => {
           { doctorId: Number(userId) }
         ]
       },
-      // ---------------------------------------------------------
-      // 👇 THE FIX: We must explicitly ask for the related data
-      // ---------------------------------------------------------
-      include: {
-        patient: {
-          select: {
-            name: true,
-            email: true
-          }
-        },
-        doctor: {
-          select: {
-            name: true,
-            // We also need the profile for the specialization
-            doctorProfile: {
-              select: {
-                specialization: true
-              }
-            }
-          }
-        }
-      },
-      // ---------------------------------------------------------
       orderBy: { startTime: 'asc' }
     });
 

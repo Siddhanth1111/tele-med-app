@@ -1,19 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
+// 1. Update Interface: Relations are now Optional/Missing
 interface Appointment {
   id: number;
   startTime: string;
   status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
   reason?: string;
+  doctorId: number;  // We rely on IDs now
+  patientId: number; // We rely on IDs now
+  // Keep these as optional for backward compatibility
   doctor?: {
     name: string;
-    doctorProfile?: {
-      specialization: string;
-    };
+    doctorProfile?: { specialization: string };
   };
-  patient?: {
-    name: string;
-  };
+  patient?: { name: string };
 }
 
 interface AppointmentCardProps {
@@ -29,6 +30,39 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
   onJoinCall,
   onDownloadPrescription,
 }) => {
+  const [remoteName, setRemoteName] = useState("Loading...");
+  const [specialization, setSpecialization] = useState("");
+  const gatewayUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+  // 2. Determine who we need to fetch
+  // If I am a Patient, I need the Doctor's details.
+  // If I am a Doctor, I need the Patient's details.
+  const targetUserId = userRole === 'PATIENT' ? appointment.doctorId : appointment.patientId;
+
+  useEffect(() => {
+    if (!targetUserId) return;
+
+    // 3. Fetch the User Details from Auth Service
+    // Note: We use the Gateway Port (8080) and Public IP
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get(`${gatewayUrl}/api/auth/user/${targetUserId}`);
+        
+        setRemoteName(res.data.name || "Unknown User");
+        
+        // If we are looking at a doctor, grab their specialization
+        if (res.data.doctorProfile) {
+          setSpecialization(res.data.doctorProfile.specialization);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user details", err);
+        setRemoteName("Unknown");
+      }
+    };
+
+    fetchUser();
+  }, [targetUserId]);
+
   const getInitials = (name: string) => {
     const parts = name.trim().split(' ');
     if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
@@ -44,9 +78,6 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
     return colors[status as keyof typeof colors] || 'bg-gray-500/20 text-gray-400 border-gray-500/30';
   };
 
-  const otherPerson = userRole === 'DOCTOR' ? appointment.patient : appointment.doctor;
-  const personName = otherPerson?.name || 'Appointment';
-
   return (
     <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700 p-6 hover:shadow-2xl hover:border-gray-600 transition">
       <div className="flex justify-between items-start">
@@ -54,32 +85,34 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           <div className="flex items-center gap-3 mb-3">
             {/* Avatar */}
             <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-              {getInitials(personName)}
+              {getInitials(remoteName)}
             </div>
             
             {/* Info */}
             <div>
-              <p className="font-bold text-white">{personName}</p>
-              {userRole === 'PATIENT' && appointment.doctor?.doctorProfile?.specialization && (
-                <p className="text-sm text-gray-400">{appointment.doctor.doctorProfile.specialization}</p>
+              {/* 4. Display the Fetched Name */}
+              <p className="font-bold text-white">{remoteName}</p>
+              
+              {userRole === 'PATIENT' && specialization && (
+                <p className="text-sm text-gray-400">{specialization}</p>
               )}
-              {/* --- TIME DISPLAY FIX --- */}
+              
+              {/* Time Display (IST) */}
               <p className="text-sm text-gray-500">
                 {new Date(appointment.startTime).toLocaleDateString('en-IN', { 
                   month: 'short', 
                   day: 'numeric',
                   year: 'numeric',
-                  timeZone: 'Asia/Kolkata' // <--- Force IST Date
+                  timeZone: 'Asia/Kolkata' 
                 })} 
                 {' • '} 
                 {new Date(appointment.startTime).toLocaleTimeString('en-IN', { 
                   hour: '2-digit', 
                   minute: '2-digit',
                   hour12: true,
-                  timeZone: 'Asia/Kolkata' // <--- Force IST Time
+                  timeZone: 'Asia/Kolkata'
                 })}
               </p>
-              {/* ------------------------ */}
             </div>
           </div>
 

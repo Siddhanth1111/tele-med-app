@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
+// import { prisma } from '@repo/database'; 
+// You don't need "new PrismaClient()", it's already created!
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 dotenv.config();
