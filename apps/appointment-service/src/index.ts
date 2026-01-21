@@ -174,8 +174,8 @@ app.get('/availability', async (req, res) => {
     const slots = [];
     
     // Start at 9:00 AM UTC first
-    let currentTime = new Date(date as string);
-    currentTime.setUTCHours(3, 30, 0, 0);
+    let currentTime = new Date(searchDate);
+    currentTime.setUTCHours(startHourIST, 0, 0, 0); 
 
     // Shift Time BACK by 5.5 Hours to convert IST -> UTC
     // 9:00 AM IST = 3:30 AM UTC
