@@ -172,35 +172,7 @@ app.get('/profile/:id', async (req, res) => {
 });
 
 // 2. UPDATE PROFILE DETAILS
-app.put('/profile/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, email, specialization, consultationFee, licenseNumber } = req.body;
 
-    // Use a transaction to update both User table and Profile table
-    const updatedUser = await prisma.user.update({
-      where: { id: Number(id) },
-      data: {
-        name,
-        email,
-        // Conditionally update Doctor Profile if fields exist
-        doctorProfile: specialization ? {
-          update: {
-            specialization,
-            consultationFee: Number(consultationFee),
-            licenseNumber
-          }
-        } : undefined
-      },
-      include: { doctorProfile: true }
-    });
-
-    res.json(updatedUser);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to update profile" });
-  }
-});
 
 // 3. CHANGE PASSWORD
 app.put('/profile/:id/password', async (req, res) => {
@@ -259,15 +231,7 @@ app.get('/user/:id', async (req, res) => {
 // ... app.listen
 
 // CATCH-ALL ROUTE: Handle unmatched requests to prevent hanging/aborted requests
-app.use('*', (req, res) => {
-  res.status(404).json({ error: "Route not found in Auth Service" });
-});
 
-// ERROR HANDLING MIDDLEWARE: Catch and handle errors gracefully
-app.use((err: any, req: any, res: any, next: any) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: 'Internal Server Error' });
-});
 
 // apps/auth-service/src/index.ts
 
@@ -327,6 +291,16 @@ app.get('/doctors/:id', async (req, res) => {
   }
 });
 // ADD NEW ROUTE: Get Public Doctor Details (For Patients)
+
+app.use('*', (req, res) => {
+  res.status(404).json({ error: "Route not found in Auth Service" });
+});
+
+// ERROR HANDLING MIDDLEWARE: Catch and handle errors gracefully
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
 
 
 app.listen(PORT, () => {

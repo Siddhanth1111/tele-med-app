@@ -40,9 +40,11 @@ export default function Profile() {
       const payload = {
         name: profile.name,
         email: profile.email,
+        // Doctor specific fields
         specialization: profile.doctorProfile?.specialization,
         consultationFee: profile.doctorProfile?.consultationFee,
-        licenseNumber: profile.doctorProfile?.licenseNumber
+        licenseNumber: profile.doctorProfile?.licenseNumber,
+        bio: profile.doctorProfile?.bio // <--- ADDED BIO HERE
       };
 
       await axios.put(`${gatewayUrl}/api/auth/profile/${user?.id}`, payload);
@@ -88,7 +90,7 @@ export default function Profile() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-950">
+      <div className="min-h-screen bg-gray-950 text-white selection:bg-teal-500 selection:text-white">
         
         {/* Message Banner */}
         {message && (
@@ -251,6 +253,23 @@ export default function Profile() {
                               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition text-white"
                             />
                           </div>
+                          
+                          {/* --- BIO SECTION START --- */}
+                          <div className="md:col-span-2">
+                             <label className="block text-sm font-medium text-gray-300 mb-2">Professional Bio</label>
+                             <textarea 
+                               rows={4}
+                               value={profile.doctorProfile.bio || ''}
+                               placeholder="Tell patients about your experience, approach to treatment, and background..."
+                               onChange={(e) => setProfile({
+                                 ...profile, 
+                                 doctorProfile: { ...profile.doctorProfile, bio: e.target.value }
+                               })}
+                               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition text-white placeholder-gray-500 resize-none"
+                             />
+                          </div>
+                          {/* --- BIO SECTION END --- */}
+
                           <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-300 mb-2">Medical License ID</label>
                             <input 
@@ -329,34 +348,35 @@ export default function Profile() {
                           placeholder="Enter new password"
                         />
                       </div>
-                      <div><label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
-                    <input 
-                      type="password"
-                      required
-                      value={passwords.confirm}
-                      onChange={(e) => setPasswords({...passwords, confirm: e.target.value})}
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition text-white"
-                      placeholder="Confirm new password"
-                    />
-                  </div>
-                </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
+                        <input 
+                          type="password"
+                          required
+                          value={passwords.confirm}
+                          onChange={(e) => setPasswords({...passwords, confirm: e.target.value})}
+                          className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition text-white"
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+                    </div>
 
-                <div className="flex justify-end pt-6">
-                  <button 
-                    type="submit"
-                    className="px-8 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-semibold rounded-lg shadow-lg transition transform hover:scale-105"
-                  >
-                    Update Password
-                  </button>
-                </div>
-              </form>
-            )}
+                    <div className="flex justify-end pt-6">
+                      <button 
+                        type="submit"
+                        className="px-8 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-semibold rounded-lg shadow-lg transition transform hover:scale-105"
+                      >
+                        Update Password
+                      </button>
+                    </div>
+                  </form>
+                )}
 
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</>
-);
+    </>
+  );
 }
