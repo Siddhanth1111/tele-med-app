@@ -18,13 +18,11 @@ model Appointment {
   reason      String
   status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
   // ADD THIS LINE:
-  prescription Prescription? 
-  
-  // // 🔗 Relations
-  // patient   User @relation("PatientAppointments", fields: [patientId], references: [id])
-  // doctor    User @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  prescription Prescription?   
 
-  
+  // 👇 ADD THIS BLOCK TO PREVENT DOUBLE BOOKINGS
+  @@unique([doctorId, startTime])
+
 }
 
 
