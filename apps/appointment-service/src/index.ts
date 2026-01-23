@@ -1,28 +1,44 @@
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
-
 import amqp from 'amqplib';
 
+const app = express();
+const prisma = new PrismaClient();
+const PORT = 3002;
 
-// RABBITMQ SETUP (Updated with Retry Logic)
+app.use(cors());
+app.use(express.json());
+
+// --- RABBITMQ SETUP WITH DLQ (The Safety Net) ---
 let channel: amqp.Channel | null = null;
 
 async function connectRabbit() {
   try {
     console.log("⏳ Appointment Service connecting to RabbitMQ...");
-    // 1. Connect
     const connection = await amqp.connect("amqp://admin:password123@rabbitmq:5672");
-    
-    // 2. Create Channel
     channel = await connection.createChannel();
-    
-    // 3. Assert Queue
-    await channel.assertQueue("appointments", { durable: true });
-    
-    console.log("✅ Appointment Service Connected to RabbitMQ");
 
-    // Handle connection close (e.g., if RabbitMQ restarts)
+    // 1. Create the Dead Letter Exchange (DLX)
+    await channel.assertExchange('dlx_exchange', 'direct', { durable: true });
+
+    // 2. Create the Dead Letter Queue (DLQ) - Where failed messages go
+    await channel.assertQueue('appointments_dlq', { durable: true });
+
+    // 3. Bind DLQ to DLX
+    await channel.bindQueue('appointments_dlq', 'dlx_exchange', 'refund_key');
+
+    // 4. Create Main Queue linked to DLX
+    await channel.assertQueue("appointments", { 
+      durable: true,
+      arguments: {
+        'x-dead-letter-exchange': 'dlx_exchange', // If fail, send here
+        'x-dead-letter-routing-key': 'refund_key' // With this label
+      } 
+    });
+    
+    console.log("✅ Appointment Service Connected (DLQ Configured)");
+
     connection.on("close", () => {
       console.error("RabbitMQ connection closed. Retrying...");
       setTimeout(connectRabbit, 5000);
@@ -30,48 +46,42 @@ async function connectRabbit() {
 
   } catch (err) {
     console.error("❌ RabbitMQ Connection Failed. Retrying in 5s...", err);
-    // 4. THE FIX: Retry after 5 seconds
     setTimeout(connectRabbit, 5000);
   }
 }
 
-connectRabbit(); // Start the process
+connectRabbit();
 
-const app = express();
-const prisma = new PrismaClient();
-const PORT = 3002; // Note: Different port from Auth (3001)
+// --- API ROUTES ---
 
-// ... rest of the file ...
-
-app.use(cors());
-app.use(express.json()); // We MUST use this here (Gateway passes raw stream)
-
-// HEALTH CHECK
 app.get('/health', (req, res) => {
   res.json({ service: "Appointment Service", status: "Active" });
 });
 
-// API: BOOK AN APPOINTMENT
 app.post('/book', async (req, res) => {
   try {
-    const { patientId, doctorId, startTime, reason } = req.body;
+    // 1. Extract paymentIntentId (Expected from Frontend after Stripe payment)
+    const { patientId, doctorId, startTime, reason, paymentIntentId } = req.body;
 
-    // 1. Basic Validation
+
     if (!patientId || !doctorId || !startTime) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const start = new Date(startTime);
-    const end = new Date(start.getTime() + 30 * 60000); // Add 30 minutes
+    if (!paymentIntentId) {
+    return res.status(400).json({ 
+      error: "Payment ID is missing. Cannot process booking safely." 
+    });
+  }
 
-    // 2. Check Availability (Is the doctor already booked?)
+    const start = new Date(startTime);
+    const end = new Date(start.getTime() + 30 * 60000); 
+
+    // 2. Check Availability
     const conflict = await prisma.appointment.findFirst({
       where: {
         doctorId: doctorId,
-        startTime: {
-          gte: start, // Greater than or equal to requested start
-          lt: end     // Less than calculated end
-        },
+        startTime: { gte: start, lt: end },
         status: 'SCHEDULED'
       }
     });
@@ -92,14 +102,18 @@ app.post('/book', async (req, res) => {
       }
     });
 
+    // 4. Publish Event (Include paymentID for potential refunds)
     if (channel) {
       const eventData = {
         type: 'APPOINTMENT_CONFIRMED',
-        patientId: patientId,
-        doctorId: doctorId,
-        time: start
+        appointmentId: appointment.id,
+        patientId,
+        doctorId,
+        time: start,
+        paymentIntentId: paymentIntentId || null // <--- CRITICAL FOR REFUND
       };
-      channel.sendToQueue("appointments", Buffer.from(JSON.stringify(eventData)));
+      
+      channel.sendToQueue("appointments", Buffer.from(JSON.stringify(eventData)), { persistent: true });
       console.log("📢 Event published to RabbitMQ");
     }
 
@@ -110,6 +124,7 @@ app.post('/book', async (req, res) => {
     res.status(500).json({ error: "Failed to book appointment" });
   }
 });
+
 
 // API: GET MY APPOINTMENTS
 // API: GET MY APPOINTMENTS (Updated with Relations)

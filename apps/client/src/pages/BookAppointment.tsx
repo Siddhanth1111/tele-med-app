@@ -87,14 +87,15 @@ export default function BookAppointment() {
     }
   };
 
-  const finalizeBooking = async () => {
+  const finalizeBooking = async (paymentIntentId: string) => {
     if (!pendingBooking) return;
     try {
       await axios.post(`${gatewayUrl}/api/appointments/book`, {
         patientId: user?.id,
         doctorId: pendingBooking.doctorId,
         startTime: pendingBooking.time,
-        reason: "Regular Checkup (Paid)"
+        reason: "Regular Checkup (Paid)",
+        paymentIntentId: paymentIntentId
       });
       setMessage(`✅ Booking Successful!`);
       setShowPayment(false);

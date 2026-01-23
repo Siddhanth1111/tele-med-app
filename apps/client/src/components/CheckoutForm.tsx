@@ -3,7 +3,8 @@ import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 
 interface CheckoutFormProps {
   amount: number;
-  onSuccess: () => void;
+  // 👇 UPDATED: onSuccess now expects the Payment ID string
+  onSuccess: (paymentId: string) => void;
   onCancel: () => void;
 }
 
@@ -37,9 +38,17 @@ export const CheckoutForm = ({ amount, onSuccess, onCancel }: CheckoutFormProps)
     if (error) {
       showMessage(error.message || "An unexpected error occurred.", 'error');
       setIsLoading(false);
-    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-      showMessage("Payment succeeded! Booking your appointment...", 'success');
-      setTimeout(() => onSuccess(), 1500);
+    } 
+    else if (paymentIntent && paymentIntent.status === 'succeeded') {
+      
+      // 👇 SUCCESS LOGIC UPDATED
+      showMessage("Payment succeeded! Finalizing booking...", 'success');
+      
+      // Wait slightly for UX, then pass the ID up to the parent
+      setTimeout(() => {
+        onSuccess(paymentIntent.id); 
+      }, 1500);
+      
     } else {
       showMessage("Payment processing...", 'info');
       setIsLoading(false);

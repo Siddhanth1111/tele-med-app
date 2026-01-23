@@ -1,41 +1,53 @@
 import amqp from 'amqplib';
 
-// Use admin:password123
-const RABBITMQ_URL = "amqp://admin:password123@rabbitmq:5672"; // 'rabbitmq' is the docker service name
+const RABBITMQ_URL = "amqp://admin:password123@rabbitmq:5672"; 
 
 async function startService() {
   try {
-    console.log("⏳ Connecting to RabbitMQ...");
-    // 1. Connect to the Message Broker
+    console.log("⏳ Notification Service connecting...");
     const connection = await amqp.connect(RABBITMQ_URL);
     const channel = await connection.createChannel();
 
-    // 2. Assert Queue (Create it if it doesn't exist)
     const queue = "appointments";
-    await channel.assertQueue(queue, { durable: true });
+    // We just assert existence here; configuration matches the publisher
+    await channel.assertQueue(queue, { 
+      durable: true,
+      arguments: {
+        'x-dead-letter-exchange': 'dlx_exchange', 
+        'x-dead-letter-routing-key': 'refund_key' 
+      }
+    });
 
     console.log("✅ Notification Service Waiting for messages...");
 
-    // 3. Consume Messages
     channel.consume(queue, (msg) => {
       if (msg !== null) {
-        const data = JSON.parse(msg.content.toString());
-        
-        console.log("---------------------------------");
+        try {
+          const data = JSON.parse(msg.content.toString());
+          
+          console.log("---------------------------------");
         console.log("📧 NEW EVENT RECEIVED!");
         console.log(`TYPE: ${data.type}`);
         console.log(`TO: Patient ID ${data.patientId}`);
         console.log(`MSG: Your appointment with Dr. ${data.doctorId} is confirmed.`);
         console.log("---------------------------------");
 
-        // Acknowledge (Tell RabbitMQ we finished processing so it can delete the msg)
-        channel.ack(msg);
+          // SUCCESS: Delete message
+          channel.ack(msg);
+
+        } catch (error: any) {
+          console.error("❌ PROCESSING FAILED:", error.message);
+          console.warn("⚠️ Sending message to DLQ (Triggering Refund)...");
+          
+          // FAILURE: Reject message. 
+          // false = do NOT requeue (send to DLQ instead)
+          channel.nack(msg, false, false); 
+        }
       }
     });
 
   } catch (error) {
     console.error("RabbitMQ Connection Failed", error);
-    // Retry logic could go here
     setTimeout(startService, 5000);
   }
 }
