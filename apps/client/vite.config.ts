@@ -8,4 +8,10 @@ export default defineConfig({
     react(),
     tailwindcss(), // <--- Add this line
   ],
+  server: {
+    host: true, // This allows Docker to expose the port
+    allowedHosts: [
+      'telemed.sid-chauhan.dev'
+    ]
+  }
 })
