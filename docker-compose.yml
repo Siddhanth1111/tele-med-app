@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   # -----------------------------------------------------------------
@@ -99,7 +98,7 @@ services:
       - "3004:3004"
     environment:
       - DATABASE_URL=postgresql://admin:password123@postgres:5432/healthcare_db?schema=public
-      - GEMINI_API_KEY=${GEMINI_API_KEY}  # <--- IMPORTANT: Paste your key here
+      - GEMINI_API_KEY=AIzaSyDs5WcRullUxN-I8WoHgJxrdLZdeK68gDo  # <--- IMPORTANT: Paste your key here
     depends_on:
       - postgres
     networks:
@@ -111,13 +110,13 @@ services:
       context: ./apps/client
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"  # <--- CHANGED FROM 3000
+      - "5173:5173" 
     volumes:
       - ./apps/client:/app
       - /app/node_modules
     environment:
-    - VITE_API_URL=http://51.20.2.7:8080
-    - VITE_VIDEO_URL=http://51.20.2.7:3003
+    - VITE_API_URL=https://telemed.sid-chauhan.dev/api
+    - VITE_VIDEO_URL=https://telemed.sid-chauhan.dev/socket
     networks:
       - healthcare-network
 
