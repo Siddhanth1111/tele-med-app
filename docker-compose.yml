@@ -98,7 +98,7 @@ services:
       - "3004:3004"
     environment:
       - DATABASE_URL=postgresql://admin:password123@postgres:5432/healthcare_db?schema=public
-      - GEMINI_API_KEY=AIzaSyDs5WcRullUxN-I8WoHgJxrdLZdeK68gDo  # <--- IMPORTANT: Paste your key here
+      - GEMINI_API_KEY=${GEMINI_API_KEY}  # <--- IMPORTANT: Paste your key here
     depends_on:
       - postgres
     networks:
