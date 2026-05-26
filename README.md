@@ -6,7 +6,7 @@
 
 > A robust full-stack healthcare platform featuring real-time video consultations, AI-driven symptom analysis, and secure prescription management.
 
-🔗 **Live Demo:** [http://13.48.1.146:5173/](https://telemed.sid-chauhan.dev/)
+🔗 **Live Demo:** [https://telemed.sid-chauhan.dev/](https://telemed.sid-chauhan.dev/)
 
 ---
 
