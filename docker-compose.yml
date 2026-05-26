@@ -115,7 +115,7 @@ services:
       - ./apps/client:/app
       - /app/node_modules
     environment:
-    - VITE_API_URL=https://telemed.sid-chauhan.dev/api
+    - VITE_API_URL=https://telemed.sid-chauhan.dev
     - VITE_VIDEO_URL=https://telemed.sid-chauhan.dev/socket
     networks:
       - healthcare-network
